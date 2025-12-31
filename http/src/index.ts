@@ -12,23 +12,44 @@ mongoose.connect(process.env.MONGO_URL || "" ).then(() => {
 }).catch((err) => {
   console.log(err)
 })
-
+app.use(express.json())
 app.post("/auth/signup", async(req, res) => {
   try {
-    const {success, data} = signUpSchema.safeParse(req.body)
+    const {success, data} = signUpSchema.safeParse(await(req.body))
     if (!success){
+      res.status(400).json(
+        {
+          "success": false,
+          "error": "Invalid data"
+        }
+      )
+      return
+    }
+    const existingUser = await User.findOne({
+      email: data.email,
+    })
+    if (existingUser){
       res.status(400).json(
         {
           "success": false,
           "error": "Email already exists"
         }
       )
-      return
     }
-    const user = await User.create(data)
+    const user = await User.create({
+      email: data.email,
+      name: data.name,
+      password: data.password,
+      role: data.role
+    })
     res.status(201).json({
         "success": true,
-        "data": data,
+        "data": {
+          "_id": user._id,
+          "email": user.email,
+          "name": user.name,
+          "role": user.role
+        },
     })
   } catch (error) {
     console.error("Error: ", error)
@@ -40,10 +61,23 @@ app.post("/auth/signup", async(req, res) => {
 })
 
 
-app.post("auth/login",async(req,res)=> {
+app.post("/auth/login",async(req,res)=> {
   try {
-    const {success, data} = signInSchema.safeParse(req.body)
+    const {success, data} = signInSchema.safeParse(await(req.body))
     if (!success){
+      res.status(401).json(
+        {
+          "success": false,
+          "error": "Invalid data"
+        }
+      )
+      return
+    }
+    const user = await User.findOne({
+      email: data.email,
+      password: data.password
+    })
+    if (!user){
       res.status(401).json(
         {
           "success": false,
