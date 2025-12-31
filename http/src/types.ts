@@ -1,23 +1,20 @@
 import {z} from "zod"
 
-export const userSchema = z.object({
+export const signUpSchema = z.object({
+  name: z.string().min(2),
   email: z.email(),
-  name: z.string().min(3),
   password: z.string().min(4),
   role: z.enum(["student", "teacher"])
 }
 )
 
-export const classSchema = z.object({
-  className: z.string().min(3),
-  studentsId: z.array(z.string()),
-  teacherId: z.string()
+export const signInSchema = z.object({
+  email: z.email(),
+  password: z.string().min(4)
 })
 
-export const attendanceSchema = z.object({
-  classId: z.string(),
-  studentId: z.string(),
-  status: z.enum(["present", "absent"])
+export const classSchema = z.object({
+  className: z.string()
 })
 
 
