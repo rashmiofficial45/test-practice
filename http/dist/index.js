@@ -18,6 +18,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const models_1 = require("./models");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const types_1 = require("./types");
+const middleware_1 = require("./middleware");
 const app = (0, express_1.default)();
 const port = process.env.PORT || 4000;
 mongoose_1.default.connect(process.env.MONGO_URL || "").then(() => {
@@ -90,11 +91,41 @@ app.post("/auth/login", (req, res) => __awaiter(void 0, void 0, void 0, function
             });
             return;
         }
-        const token = jsonwebtoken_1.default.sign({ email: data.email, password: data.password }, process.env.JWT_SECRET);
+        const token = jsonwebtoken_1.default.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET);
         res.status(200).json({
             "success": true,
             "data": {
                 "token": token
+            }
+        });
+    }
+    catch (error) {
+        console.error("Error: ", error);
+        res.status(500).json({
+            "success": false,
+            "error": "Internal Server Error"
+        });
+    }
+}));
+app.get("/auth/me", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const user = yield models_1.User.findOne({
+            _id: req.userId
+        });
+        if (!user) {
+            res.status(401).json({
+                "success": false,
+                "error": "Unauthorized"
+            });
+            return;
+        }
+        res.status(200).json({
+            "success": true,
+            "data": {
+                "_id": user._id,
+                "email": user.email,
+                "name": user.name,
+                "role": user.role
             }
         });
     }
