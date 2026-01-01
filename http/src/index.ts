@@ -13,7 +13,11 @@ mongoose.connect(process.env.MONGO_URL || "" ).then(() => {
 }).catch((err) => {
   console.log(err)
 })
+
+
 app.use(express.json())
+
+
 app.post("/auth/signup", async(req, res) => {
   try {
     const {success, data} = signUpSchema.safeParse(await(req.body))
@@ -137,6 +141,57 @@ app.get("/auth/me", authMiddleware, async(req,res)=> {
     })
   }
 })
+
+
+app.post("/class",authMiddleware, async(req, res) => {
+  const {success, data} = classSchema.safeParse(await(req.body))
+  if (!success){
+    res.status(400).json(
+      {
+        "success": false,
+        "error": "Invalid data"
+      }
+    )
+    return
+  }
+  const userId = req.userId
+  const role = req.role
+  if (role !== "teacher"){
+    res.status(401).json(
+      {
+        "success": false,
+        "error": "Unauthorized"
+      }
+    )
+    return
+  }
+  const newClass = await Class.create({
+    className: data.className,
+    teacherId: userId,
+    studentsId: []
+  })
+  if(!newClass){
+    res.status(500).json(
+      {
+        "success": false,
+        "error": "Internal Server Error"
+      }
+    )
+    return
+  }
+    res.status(200).json(
+      {
+        "success": true,
+        "data": {
+          "_id": newClass._id,
+          "className": newClass.className,
+          "teacherId": newClass.teacherId,
+          "studentIds": newClass.studentsId
+        }
+      }
+    )
+})
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })

@@ -137,6 +137,46 @@ app.get("/auth/me", middleware_1.authMiddleware, (req, res) => __awaiter(void 0,
         });
     }
 }));
+app.post("/class", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { success, data } = types_1.classSchema.safeParse(yield (req.body));
+    if (!success) {
+        res.status(400).json({
+            "success": false,
+            "error": "Invalid data"
+        });
+        return;
+    }
+    const userId = req.userId;
+    const role = req.role;
+    if (role !== "teacher") {
+        res.status(401).json({
+            "success": false,
+            "error": "Unauthorized"
+        });
+        return;
+    }
+    const newClass = yield models_1.Class.create({
+        className: data.className,
+        teacherId: userId,
+        studentsId: []
+    });
+    if (!newClass) {
+        res.status(500).json({
+            "success": false,
+            "error": "Internal Server Error"
+        });
+        return;
+    }
+    res.status(200).json({
+        "success": true,
+        "data": {
+            "_id": newClass._id,
+            "className": newClass.className,
+            "teacherId": newClass.teacherId,
+            "studentIds": newClass.studentsId
+        }
+    });
+}));
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
