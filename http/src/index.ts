@@ -3,25 +3,25 @@ import 'dotenv/config'
 import mongoose from "mongoose"
 import { User, Class, Attendance } from "./models"
 import jwt from "jsonwebtoken"
-import { signUpSchema, signInSchema, classSchema } from "./types"
+import { signUpSchema, signInSchema, classSchema, addStudentSchema } from "./types"
 import { authMiddleware } from "./middleware"
 const app = express()
 const port = process.env.PORT || 4000
 
-mongoose.connect(process.env.MONGO_URL || "" ).then(() => {
+mongoose.connect(process.env.MONGO_URL || "").then(() => {
   console.log("Connected to MongoDB")
 }).catch((err) => {
-  console.log(err)
+  console.error(err)
 })
 
 
 app.use(express.json())
 
 
-app.post("/auth/signup", async(req, res) => {
+app.post("/auth/signup", async (req, res) => {
   try {
-    const {success, data} = signUpSchema.safeParse(await(req.body))
-    if (!success){
+    const { success, data } = signUpSchema.safeParse(await (req.body))
+    if (!success) {
       res.status(400).json(
         {
           "success": false,
@@ -33,7 +33,7 @@ app.post("/auth/signup", async(req, res) => {
     const existingUser = await User.findOne({
       email: data.email,
     })
-    if (existingUser){
+    if (existingUser) {
       res.status(400).json(
         {
           "success": false,
@@ -48,13 +48,13 @@ app.post("/auth/signup", async(req, res) => {
       role: data.role
     })
     res.status(201).json({
-        "success": true,
-        "data": {
-          "_id": user._id,
-          "email": user.email,
-          "name": user.name,
-          "role": user.role
-        },
+      "success": true,
+      "data": {
+        "_id": user._id,
+        "email": user.email,
+        "name": user.name,
+        "role": user.role
+      },
     })
   } catch (error) {
     console.error("Error: ", error)
@@ -66,10 +66,10 @@ app.post("/auth/signup", async(req, res) => {
 })
 
 
-app.post("/auth/login",async(req,res)=> {
+app.post("/auth/login", async (req, res) => {
   try {
-    const {success, data} = signInSchema.safeParse(await(req.body))
-    if (!success){
+    const { success, data } = signInSchema.safeParse(await (req.body))
+    if (!success) {
       res.status(401).json(
         {
           "success": false,
@@ -82,7 +82,7 @@ app.post("/auth/login",async(req,res)=> {
       email: data.email,
       password: data.password
     })
-    if (!user){
+    if (!user) {
       res.status(401).json(
         {
           "success": false,
@@ -91,7 +91,7 @@ app.post("/auth/login",async(req,res)=> {
       )
       return
     }
-    const token = jwt.sign({userId: user._id, role:user.role }, process.env.JWT_SECRET!)
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET!)
     res.status(200).json({
       "success": true,
       "data": {
@@ -108,12 +108,12 @@ app.post("/auth/login",async(req,res)=> {
 })
 
 
-app.get("/auth/me", authMiddleware, async(req,res)=> {
+app.get("/auth/me", authMiddleware, async (req, res) => {
   try {
     const user = await User.findOne({
       _id: req.userId
     })
-    if(!user){
+    if (!user) {
       res.status(401).json(
         {
           "success": false,
@@ -143,9 +143,9 @@ app.get("/auth/me", authMiddleware, async(req,res)=> {
 })
 
 
-app.post("/class",authMiddleware, async(req, res) => {
-  const {success, data} = classSchema.safeParse(await(req.body))
-  if (!success){
+app.post("/class", authMiddleware, async (req, res) => {
+  const { success, data } = classSchema.safeParse(await (req.body))
+  if (!success) {
     res.status(400).json(
       {
         "success": false,
@@ -156,7 +156,7 @@ app.post("/class",authMiddleware, async(req, res) => {
   }
   const userId = req.userId
   const role = req.role
-  if (role !== "teacher"){
+  if (role !== "teacher") {
     res.status(401).json(
       {
         "success": false,
@@ -170,7 +170,7 @@ app.post("/class",authMiddleware, async(req, res) => {
     teacherId: userId,
     studentsId: []
   })
-  if(!newClass){
+  if (!newClass) {
     res.status(500).json(
       {
         "success": false,
@@ -179,19 +179,71 @@ app.post("/class",authMiddleware, async(req, res) => {
     )
     return
   }
-    res.status(200).json(
-      {
-        "success": true,
-        "data": {
-          "_id": newClass._id,
-          "className": newClass.className,
-          "teacherId": newClass.teacherId,
-          "studentIds": newClass.studentsId
-        }
+  res.status(200).json(
+    {
+      "success": true,
+      "data": {
+        "_id": newClass._id,
+        "className": newClass.className,
+        "teacherId": newClass.teacherId,
+        "studentIds": newClass.studentsId
       }
-    )
+    }
+  )
 })
 
+
+app.post("/class/:id/add-student", authMiddleware, async (req, res) => {
+  const { success, data } = addStudentSchema.safeParse(await (req.body))
+  if (!success) {
+    res.status(400).json({
+        "success": false,
+        "error": "Invalid request schema"
+    })
+    return
+  }
+  if (req.role !== "teacher"){
+    res.status(403).json(
+      {
+        "success": false,
+        "error": "Forbidden, teacher access required"
+      }
+    )
+  }
+  const teacherId = req.userId
+  const classId = req.params.id
+  const studentsId = data.studentId
+
+
+  const addStudent = await Class.findOneAndUpdate(
+    {
+      _id: classId,
+      teacherId: teacherId
+    },
+    {
+      $addToSet: { studentsId: studentsId } // prevents duplicates
+    },
+    {
+      new: true
+    }
+  );
+  if (!addStudent) {
+    return res.status(404).json({
+      success: false,
+      error: "Class not found or unauthorized"
+    });
+  }
+  res.status(200).json({
+    "success": true,
+    "data": {
+      "_id": addStudent._id,
+      "className": addStudent.className,
+      "teacherId": addStudent.teacherId,
+      "studentIds": addStudent.studentsId
+    }
+  })
+
+})
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })

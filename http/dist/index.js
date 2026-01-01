@@ -24,7 +24,7 @@ const port = process.env.PORT || 4000;
 mongoose_1.default.connect(process.env.MONGO_URL || "").then(() => {
     console.log("Connected to MongoDB");
 }).catch((err) => {
-    console.log(err);
+    console.error(err);
 });
 app.use(express_1.default.json());
 app.post("/auth/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -174,6 +174,48 @@ app.post("/class", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, 
             "className": newClass.className,
             "teacherId": newClass.teacherId,
             "studentIds": newClass.studentsId
+        }
+    });
+}));
+app.post("/class/:id/add-student", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { success, data } = types_1.addStudentSchema.safeParse(yield (req.body));
+    if (!success) {
+        res.status(400).json({
+            "success": false,
+            "error": "Invalid request schema"
+        });
+        return;
+    }
+    if (req.role !== "teacher") {
+        res.status(403).json({
+            "success": false,
+            "error": "Forbidden, teacher access required"
+        });
+    }
+    const teacherId = req.userId;
+    const classId = req.params.id;
+    const studentsId = data.studentId;
+    const addStudent = yield models_1.Class.findOneAndUpdate({
+        _id: classId,
+        teacherId: teacherId
+    }, {
+        $addToSet: { studentsId: studentsId } // prevents duplicates
+    }, {
+        new: true
+    });
+    if (!addStudent) {
+        return res.status(404).json({
+            success: false,
+            error: "Class not found or unauthorized"
+        });
+    }
+    res.status(200).json({
+        "success": true,
+        "data": {
+            "_id": addStudent._id,
+            "className": addStudent.className,
+            "teacherId": addStudent.teacherId,
+            "studentIds": addStudent.studentsId
         }
     });
 }));
