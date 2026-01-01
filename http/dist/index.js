@@ -199,8 +199,8 @@ app.post("/class/:id/add-student", middleware_1.authMiddleware, (req, res) => __
     const isTeacherOwner = yield models_1.Class.findOne({
         _id: classId
     });
-    console.log(isTeacherOwner === null || isTeacherOwner === void 0 ? void 0 : isTeacherOwner.teacherId);
-    console.log(teacherId);
+    // console.log(isTeacherOwner?.teacherId) //new ObjectId('695660ac76069f6a091434e2')
+    // console.log(teacherId) //695660ac76069f6a091434e2
     if (((_a = isTeacherOwner === null || isTeacherOwner === void 0 ? void 0 : isTeacherOwner.teacherId) === null || _a === void 0 ? void 0 : _a.toString()) !== teacherId) {
         res.status(403).json({
             "success": false,

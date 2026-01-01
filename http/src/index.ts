@@ -217,8 +217,8 @@ app.post("/class/:id/add-student", authMiddleware, async (req, res) => {
   const isTeacherOwner = await Class.findOne({
     _id: classId
   })
-  console.log(isTeacherOwner?.teacherId)
-  console.log(teacherId)
+  // console.log(isTeacherOwner?.teacherId) //new ObjectId('695660ac76069f6a091434e2')
+  // console.log(teacherId) //695660ac76069f6a091434e2
 
   if (isTeacherOwner?.teacherId?.toString() !== teacherId){
     res.status(403).json({
