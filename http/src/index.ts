@@ -214,6 +214,18 @@ app.post("/class/:id/add-student", authMiddleware, async (req, res) => {
   const classId = req.params.id
   const studentsId = data.studentId
 
+  const isTeacherOwner = await Class.findOne({
+    _id: classId
+  })
+  console.log(isTeacherOwner?.teacherId)
+  console.log(teacherId)
+
+  if (isTeacherOwner?.teacherId?.toString() !== teacherId){
+    res.status(403).json({
+      "success": false,
+      "error": "Forbidden, not class teacher"
+    })
+  }
 
   const addStudent = await Class.findOneAndUpdate(
     {

@@ -178,6 +178,7 @@ app.post("/class", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, 
     });
 }));
 app.post("/class/:id/add-student", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const { success, data } = types_1.addStudentSchema.safeParse(yield (req.body));
     if (!success) {
         res.status(400).json({
@@ -195,6 +196,17 @@ app.post("/class/:id/add-student", middleware_1.authMiddleware, (req, res) => __
     const teacherId = req.userId;
     const classId = req.params.id;
     const studentsId = data.studentId;
+    const isTeacherOwner = yield models_1.Class.findOne({
+        _id: classId
+    });
+    console.log(isTeacherOwner === null || isTeacherOwner === void 0 ? void 0 : isTeacherOwner.teacherId);
+    console.log(teacherId);
+    if (((_a = isTeacherOwner === null || isTeacherOwner === void 0 ? void 0 : isTeacherOwner.teacherId) === null || _a === void 0 ? void 0 : _a.toString()) !== teacherId) {
+        res.status(403).json({
+            "success": false,
+            "error": "Forbidden, not class teacher"
+        });
+    }
     const addStudent = yield models_1.Class.findOneAndUpdate({
         _id: classId,
         teacherId: teacherId
