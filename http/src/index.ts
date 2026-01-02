@@ -4,7 +4,7 @@ import mongoose from "mongoose"
 import { User, Class, Attendance } from "./models"
 import jwt from "jsonwebtoken"
 import { signUpSchema, signInSchema, classSchema, addStudentSchema } from "./types"
-import { authMiddleware } from "./middleware"
+import { authMiddleware, teacherMiddleware } from "./middleware"
 const app = express()
 const port = process.env.PORT || 4000
 
@@ -193,23 +193,16 @@ app.post("/class", authMiddleware, async (req, res) => {
 })
 
 
-app.post("/class/:id/add-student", authMiddleware, async (req, res) => {
+app.post("/class/:id/add-student", authMiddleware, teacherMiddleware, async (req, res) => {
   const { success, data } = addStudentSchema.safeParse(await (req.body))
   if (!success) {
     res.status(400).json({
-        "success": false,
-        "error": "Invalid request schema"
+      "success": false,
+      "error": "Invalid request schema"
     })
     return
   }
-  if (req.role !== "teacher"){
-    res.status(403).json(
-      {
-        "success": false,
-        "error": "Forbidden, teacher access required"
-      }
-    )
-  }
+
   const teacherId = req.userId
   const classId = req.params.id
   const studentsId = data.studentId
@@ -220,7 +213,7 @@ app.post("/class/:id/add-student", authMiddleware, async (req, res) => {
   // console.log(isTeacherOwner?.teacherId) //new ObjectId('695660ac76069f6a091434e2')
   // console.log(teacherId) //695660ac76069f6a091434e2
 
-  if (isTeacherOwner?.teacherId?.toString() !== teacherId){
+  if (isTeacherOwner?.teacherId?.toString() !== teacherId) {
     res.status(403).json({
       "success": false,
       "error": "Forbidden, not class teacher"
@@ -256,6 +249,8 @@ app.post("/class/:id/add-student", authMiddleware, async (req, res) => {
   })
 
 })
+
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })

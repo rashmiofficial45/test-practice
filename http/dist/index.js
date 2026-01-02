@@ -177,7 +177,7 @@ app.post("/class", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, 
         }
     });
 }));
-app.post("/class/:id/add-student", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.post("/class/:id/add-student", middleware_1.authMiddleware, middleware_1.teacherMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { success, data } = types_1.addStudentSchema.safeParse(yield (req.body));
     if (!success) {
@@ -186,12 +186,6 @@ app.post("/class/:id/add-student", middleware_1.authMiddleware, (req, res) => __
             "error": "Invalid request schema"
         });
         return;
-    }
-    if (req.role !== "teacher") {
-        res.status(403).json({
-            "success": false,
-            "error": "Forbidden, teacher access required"
-        });
     }
     const teacherId = req.userId;
     const classId = req.params.id;
@@ -228,6 +222,42 @@ app.post("/class/:id/add-student", middleware_1.authMiddleware, (req, res) => __
             "className": addStudent.className,
             "teacherId": addStudent.teacherId,
             "studentIds": addStudent.studentsId
+        }
+    });
+}));
+app.get("/class/:id", middleware_1.authMiddleware, middleware_1.teacherMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const teacherId = req.userId;
+    const classId = req.params.id;
+    const classExist = yield models_1.Class.findOne({
+        _id: classId
+    });
+    if (!classExist) {
+        res.json(404).json({
+            "success": false,
+            "error": "Class not found"
+        });
+    }
+    const studentsInClass = yield models_1.User.find({
+        _id: { $in: classExist === null || classExist === void 0 ? void 0 : classExist.studentsId }
+    });
+    if (!studentsInClass) {
+        res.status(404).json({
+            "success": false,
+            "error": "Student not found"
+        });
+        return;
+    }
+    res.status(200).json({
+        "success": true,
+        "data": {
+            "_id": classId,
+            "className": classExist === null || classExist === void 0 ? void 0 : classExist.className,
+            "teacherId": classExist === null || classExist === void 0 ? void 0 : classExist.teacherId,
+            "students": studentsInClass.map((student) => ({
+                id: student._id,
+                name: student.name,
+                email: student.email
+            }))
         }
     });
 }));

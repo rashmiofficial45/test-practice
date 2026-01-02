@@ -22,3 +22,15 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     })
   }
 }
+
+export const teacherMiddleware = (req:Request, res:Response, next:NextFunction) => {
+  if (req.role !== "teacher") {
+    res.status(403).json(
+      {
+        "success": false,
+        "error": "Forbidden, teacher access required"
+      }
+    )
+  }
+  next()
+}
