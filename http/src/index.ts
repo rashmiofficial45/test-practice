@@ -251,6 +251,44 @@ app.post("/class/:id/add-student", authMiddleware, teacherMiddleware, async (req
 })
 
 
+app.get("/class/:id",authMiddleware, teacherMiddleware, async(req,res)=> {
+  const teacherId = req.userId
+  const classId = req.params.id
+
+  const classExist = await Class.findOne({
+    _id: classId
+  })
+  if (!classExist){
+    res.json(404).json({
+      "success": false,
+      "error": "Class not found"
+    })
+  }
+  const studentsInClass = await User.find({
+    _id: { $in: classExist?.studentsId }
+  })
+  if (!studentsInClass){
+    res.status(404).json({
+      "success": false,
+      "error": "Student not found"
+    })
+    return
+  }
+  res.status(200).json({
+    "success": true,
+    "data": {
+      "_id": classId,
+      "className": classExist?.className,
+      "teacherId": classExist?.teacherId,
+      "students": studentsInClass.map((student)=>({
+        id: student._id,
+        name: student.name,
+        email: student.email
+      }))
+    }
+  })
+})
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })
