@@ -352,6 +352,29 @@ app.get("/class/:id/my-attendance", authMiddleware, studentMiddleware, async (re
     })
   }
 
+  const markAttendance = await Attendance.findOne({
+    classId: classId,
+    studentId: studentId,
+  })
+
+  if (markAttendance) {
+    return res.status(200).json({
+      success: true,
+      data: {
+        classId: classId,
+        status: "present"
+      }
+    })
+  } else {
+    return res.status(200).json({
+      success: true,
+      data: {
+        classId: classId,
+        status: null
+      }
+    })
+  }
+
 })
 
 

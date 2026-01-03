@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.teacherMiddleware = exports.authMiddleware = void 0;
+exports.studentMiddleware = exports.teacherMiddleware = exports.authMiddleware = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const authMiddleware = (req, res, next) => {
     var _a;
@@ -38,3 +38,13 @@ const teacherMiddleware = (req, res, next) => {
     next();
 };
 exports.teacherMiddleware = teacherMiddleware;
+const studentMiddleware = (req, res, next) => {
+    if (req.role !== "student") {
+        res.status(403).json({
+            "success": false,
+            "error": "Forbidden, not a student"
+        });
+    }
+    next();
+};
+exports.studentMiddleware = studentMiddleware;

@@ -297,6 +297,48 @@ app.get("/teachers", middleware_1.authMiddleware, middleware_1.teacherMiddleware
         }))
     });
 }));
+app.get("/class/:id/my-attendance", middleware_1.authMiddleware, middleware_1.studentMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const classId = req.params.id;
+    const studentId = req.userId;
+    if (!studentId) {
+        return res.status(401).json({
+            success: false,
+            error: "Unauthorized"
+        });
+    }
+    const studentIsEnrolled = yield models_1.Class.findOne({
+        _id: classId,
+        studentsId: { $in: [studentId] }
+    });
+    if (!studentIsEnrolled) {
+        return res.status(404).json({
+            "success": false,
+            "error": "Student not enrolled"
+        });
+    }
+    const markAttendance = yield models_1.Attendance.findOne({
+        classId: classId,
+        studentId: studentId,
+    });
+    if (markAttendance) {
+        return res.status(200).json({
+            success: true,
+            data: {
+                classId: classId,
+                status: "present"
+            }
+        });
+    }
+    else {
+        return res.status(200).json({
+            success: true,
+            data: {
+                classId: classId,
+                status: null
+            }
+        });
+    }
+}));
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
