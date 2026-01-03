@@ -34,3 +34,15 @@ export const teacherMiddleware = (req:Request, res:Response, next:NextFunction) 
   }
   next()
 }
+
+export const studentMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  if (req.role !== "student") {
+    res.status(403).json(
+      {
+        "success": false,
+        "error": "Forbidden, not a student"
+      }
+    )
+  }
+  next()
+}
