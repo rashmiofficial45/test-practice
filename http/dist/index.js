@@ -319,7 +319,7 @@ app.get("/class/:id/my-attendance", middleware_1.authMiddleware, middleware_1.st
     const markAttendance = yield models_1.Attendance.findOne({
         classId: classId,
         studentId: studentId,
-    });
+    }); //nothing is there in this table so every request will show null
     if (markAttendance) {
         return res.status(200).json({
             success: true,

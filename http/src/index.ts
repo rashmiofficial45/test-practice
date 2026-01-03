@@ -5,7 +5,6 @@ import { User, Class, Attendance } from "./models"
 import jwt from "jsonwebtoken"
 import { signUpSchema, signInSchema, classSchema, addStudentSchema } from "./types"
 import { authMiddleware, studentMiddleware, teacherMiddleware } from "./middleware"
-import { email } from "zod"
 const app = express()
 const port = process.env.PORT || 4000
 
@@ -355,7 +354,7 @@ app.get("/class/:id/my-attendance", authMiddleware, studentMiddleware, async (re
   const markAttendance = await Attendance.findOne({
     classId: classId,
     studentId: studentId,
-  })
+  })  //nothing is there in this table so every request will show null
 
   if (markAttendance) {
     return res.status(200).json({
