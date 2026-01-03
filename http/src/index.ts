@@ -310,6 +310,25 @@ app.get("/students", authMiddleware, teacherMiddleware, async (req, res) => {
   })
 })
 
+app.get("/teachers",authMiddleware, teacherMiddleware, async(req,res) => {
+  const teacher = await User.find({role: "teacher"})
+  if (!teacher) {
+    res.status(404).json({
+      "success": false,
+      "error": "Teacher not found"
+    })
+    return
+  }
+  res.status(200).json({
+    "success": true,
+    "data": teacher.map((t) => ({
+      _id: t.id,
+      name: t.name,
+      email: t.email
+    }))
+  })
+})
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
