@@ -261,6 +261,24 @@ app.get("/class/:id", middleware_1.authMiddleware, middleware_1.teacherMiddlewar
         }
     });
 }));
+app.get("/students", middleware_1.authMiddleware, middleware_1.teacherMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const student = yield models_1.User.find({ role: "student" });
+    if (!student) {
+        res.status(404).json({
+            "success": false,
+            "error": "Student not found"
+        });
+        return;
+    }
+    res.status(200).json({
+        "success": true,
+        "data": student.map((s) => ({
+            _id: s.id,
+            name: s.name,
+            email: s.email
+        }))
+    });
+}));
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });

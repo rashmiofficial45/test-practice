@@ -5,6 +5,7 @@ import { User, Class, Attendance } from "./models"
 import jwt from "jsonwebtoken"
 import { signUpSchema, signInSchema, classSchema, addStudentSchema } from "./types"
 import { authMiddleware, teacherMiddleware } from "./middleware"
+import { email } from "zod"
 const app = express()
 const port = process.env.PORT || 4000
 
@@ -251,14 +252,14 @@ app.post("/class/:id/add-student", authMiddleware, teacherMiddleware, async (req
 })
 
 
-app.get("/class/:id",authMiddleware, teacherMiddleware, async(req,res)=> {
+app.get("/class/:id", authMiddleware, teacherMiddleware, async (req, res) => {
   const teacherId = req.userId
   const classId = req.params.id
 
   const classExist = await Class.findOne({
     _id: classId
   })
-  if (!classExist){
+  if (!classExist) {
     res.json(404).json({
       "success": false,
       "error": "Class not found"
@@ -267,7 +268,7 @@ app.get("/class/:id",authMiddleware, teacherMiddleware, async(req,res)=> {
   const studentsInClass = await User.find({
     _id: { $in: classExist?.studentsId }
   })
-  if (!studentsInClass){
+  if (!studentsInClass) {
     res.status(404).json({
       "success": false,
       "error": "Student not found"
@@ -280,7 +281,7 @@ app.get("/class/:id",authMiddleware, teacherMiddleware, async(req,res)=> {
       "_id": classId,
       "className": classExist?.className,
       "teacherId": classExist?.teacherId,
-      "students": studentsInClass.map((student)=>({
+      "students": studentsInClass.map((student) => ({
         id: student._id,
         name: student.name,
         email: student.email
@@ -288,6 +289,27 @@ app.get("/class/:id",authMiddleware, teacherMiddleware, async(req,res)=> {
     }
   })
 })
+
+
+app.get("/students", authMiddleware, teacherMiddleware, async (req, res) => {
+  const student = await User.find({ role: "student" })
+  if (!student) {
+    res.status(404).json({
+      "success": false,
+      "error": "Student not found"
+    })
+    return
+  }
+  res.status(200).json({
+    "success": true,
+    "data": student.map((s) => ({
+      _id: s.id,
+      name: s.name,
+      email: s.email
+    }))
+  })
+})
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
