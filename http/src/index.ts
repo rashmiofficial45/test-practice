@@ -4,7 +4,7 @@ import mongoose from "mongoose"
 import { User, Class, Attendance } from "./models"
 import jwt from "jsonwebtoken"
 import { signUpSchema, signInSchema, classSchema, addStudentSchema } from "./types"
-import { authMiddleware, teacherMiddleware } from "./middleware"
+import { authMiddleware, studentMiddleware, teacherMiddleware } from "./middleware"
 import { email } from "zod"
 const app = express()
 const port = process.env.PORT || 4000
@@ -310,8 +310,9 @@ app.get("/students", authMiddleware, teacherMiddleware, async (req, res) => {
   })
 })
 
-app.get("/teachers",authMiddleware, teacherMiddleware, async(req,res) => {
-  const teacher = await User.find({role: "teacher"})
+
+app.get("/teachers", authMiddleware, teacherMiddleware, async (req, res) => {
+  const teacher = await User.find({ role: "teacher" })
   if (!teacher) {
     res.status(404).json({
       "success": false,
@@ -328,6 +329,31 @@ app.get("/teachers",authMiddleware, teacherMiddleware, async(req,res) => {
     }))
   })
 })
+
+
+app.get("/class/:id/my-attendance", authMiddleware, studentMiddleware, async (req, res) => {
+  const classId = req.params.id
+  const studentId = req.userId
+  if (!studentId) {
+    return res.status(401).json({
+      success: false,
+      error: "Unauthorized"
+    });
+  }
+
+  const studentIsEnrolled = await Class.findOne({
+    _id: classId,
+    studentsId: { $in: [studentId] }
+  })
+  if (!studentIsEnrolled){
+    return res.status(404).json({
+      "success": false,
+      "error": "Student not enrolled"
+    })
+  }
+
+})
+
 
 
 app.listen(port, () => {
