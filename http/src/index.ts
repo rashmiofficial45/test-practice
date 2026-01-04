@@ -3,17 +3,19 @@ import 'dotenv/config'
 import mongoose from "mongoose"
 import { User, Class, Attendance } from "./models"
 import jwt from "jsonwebtoken"
-import { signUpSchema, signInSchema, classSchema, addStudentSchema } from "./types"
+import { signUpSchema, signInSchema, classSchema, addStudentSchema, attendanceSchema } from "./types"
 import { authMiddleware, studentMiddleware, teacherMiddleware } from "./middleware"
 const app = express()
 const port = process.env.PORT || 4000
+
+let activeSession: { classId: string; startedAt: Date; attendance: Record<string, string> } | null = null;
+
 
 mongoose.connect(process.env.MONGO_URL || "").then(() => {
   console.log("Connected to MongoDB")
 }).catch((err) => {
   console.error(err)
 })
-
 
 app.use(express.json())
 
@@ -344,7 +346,7 @@ app.get("/class/:id/my-attendance", authMiddleware, studentMiddleware, async (re
     _id: classId,
     studentsId: { $in: [studentId] }
   })
-  if (!studentIsEnrolled){
+  if (!studentIsEnrolled) {
     return res.status(404).json({
       "success": false,
       "error": "Student not enrolled"
