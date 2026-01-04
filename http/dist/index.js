@@ -21,6 +21,7 @@ const types_1 = require("./types");
 const middleware_1 = require("./middleware");
 const app = (0, express_1.default)();
 const port = process.env.PORT || 4000;
+let activeSession = null;
 mongoose_1.default.connect(process.env.MONGO_URL || "").then(() => {
     console.log("Connected to MongoDB");
 }).catch((err) => {
@@ -338,6 +339,38 @@ app.get("/class/:id/my-attendance", middleware_1.authMiddleware, middleware_1.st
             }
         });
     }
+}));
+app.post("/attendance/start", middleware_1.authMiddleware, middleware_1.teacherMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { success, data } = types_1.attendanceSchema.safeParse(yield (req.body));
+    if (!success) {
+        return res.status(400).json({
+            "success": false,
+            "error": "Invalid request schema",
+        });
+    }
+    const classId = data.classId;
+    const classExist = yield models_1.Class.findOne({
+        _id: classId
+    });
+    if (!classExist || classExist.teacherId !== req.userId) {
+        res.status(401).json({
+            "success": false,
+            "error": "Forbidden, not class teacher"
+        });
+        return;
+    }
+    activeSession = {
+        classId: classId.toString(),
+        startedAt: new Date(),
+        attendance: {}
+    };
+    res.status(200).json({
+        "success": true,
+        "data": {
+            "classId": classExist._id,
+            "startedAt": Date.now()
+        }
+    });
 }));
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

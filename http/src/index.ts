@@ -379,6 +379,42 @@ app.get("/class/:id/my-attendance", authMiddleware, studentMiddleware, async (re
 })
 
 
+app.post("/attendance/start", authMiddleware, teacherMiddleware, async (req, res) => {
+  const { success, data } = attendanceSchema.safeParse(await (req.body))
+  if (!success) {
+    return res.status(400).json({
+      "success": false,
+      "error": "Invalid request schema",
+    })
+  }
+  const classId = data.classId
+  const classExist = await Class.findOne({
+    _id: classId
+  })
+  if (!classExist || classExist.teacherId !== req.userId) {
+    res.status(401).json({
+      "success": false,
+      "error": "Forbidden, not class teacher"
+    })
+    return
+  }
+  activeSession = {
+    classId: classId.toString(),
+    startedAt: new Date(),
+    attendance: {}
+  };
+
+
+  res.status(200).json({
+    "success": true,
+    "data": {
+      "classId": classExist._id,
+      "startedAt": Date.now()
+    }
+  })
+})
+
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addStudentSchema = exports.classSchema = exports.signInSchema = exports.signUpSchema = void 0;
+exports.attendanceSchema = exports.addStudentSchema = exports.classSchema = exports.signInSchema = exports.signUpSchema = void 0;
 const zod_1 = require("zod");
 exports.signUpSchema = zod_1.z.object({
     name: zod_1.z.string().min(2),
@@ -17,4 +17,7 @@ exports.classSchema = zod_1.z.object({
 });
 exports.addStudentSchema = zod_1.z.object({
     studentId: zod_1.z.string()
+});
+exports.attendanceSchema = zod_1.z.object({
+    classId: zod_1.z.string()
 });
