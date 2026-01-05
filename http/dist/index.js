@@ -1,4 +1,9 @@
 "use strict";
+/**
+ * @file index.ts
+ * @description Main entry point for the HTTP server. Handles authentication, class management, and attendance.
+ * Provides RESTful API endpoints and initializes the database connection.
+ */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -21,13 +26,26 @@ const types_1 = require("./types");
 const middleware_1 = require("./middleware");
 const app = (0, express_1.default)();
 const port = process.env.PORT || 4000;
+/**
+ * Tracks the current active attendance session.
+ * Initialized when a teacher starts attendance for a class.
+ */
 let activeSession = null;
+/**
+ * Establishment of MongoDB connection.
+ * Uses environment variable MONGO_URL.
+ */
 mongoose_1.default.connect(process.env.MONGO_URL || "").then(() => {
     console.log("Connected to MongoDB");
 }).catch((err) => {
     console.error(err);
 });
+// Middleware to parse JSON request bodies
 app.use(express_1.default.json());
+/**
+ * POST /auth/signup
+ * Registers a new user (student or teacher).
+ */
 app.post("/auth/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { success, data } = types_1.signUpSchema.safeParse(yield (req.body));
@@ -71,6 +89,10 @@ app.post("/auth/signup", (req, res) => __awaiter(void 0, void 0, void 0, functio
         });
     }
 }));
+/**
+ * POST /auth/login
+ * Authenticates a user and returns a JWT token.
+ */
 app.post("/auth/login", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { success, data } = types_1.signInSchema.safeParse(yield (req.body));
@@ -108,6 +130,11 @@ app.post("/auth/login", (req, res) => __awaiter(void 0, void 0, void 0, function
         });
     }
 }));
+/**
+ * GET /auth/me
+ * Returns information about the currently authenticated user.
+ * Protected by authMiddleware.
+ */
 app.get("/auth/me", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const user = yield models_1.User.findOne({
@@ -138,6 +165,11 @@ app.get("/auth/me", middleware_1.authMiddleware, (req, res) => __awaiter(void 0,
         });
     }
 }));
+/**
+ * POST /class
+ * Creates a new class. Only teachers can create classes.
+ * Protected by authMiddleware.
+ */
 app.post("/class", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { success, data } = types_1.classSchema.safeParse(yield (req.body));
     if (!success) {
@@ -178,6 +210,11 @@ app.post("/class", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, 
         }
     });
 }));
+/**
+ * POST /class/:id/add-student
+ * Adds a student to a specific class. Only the class teacher can add students.
+ * Protected by authMiddleware and teacherMiddleware.
+ */
 app.post("/class/:id/add-student", middleware_1.authMiddleware, middleware_1.teacherMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { success, data } = types_1.addStudentSchema.safeParse(yield (req.body));
@@ -226,6 +263,11 @@ app.post("/class/:id/add-student", middleware_1.authMiddleware, middleware_1.tea
         }
     });
 }));
+/**
+ * GET /class/:id
+ * Retrieves details of a class, including the list of enrolled students.
+ * Protected by authMiddleware and teacherMiddleware.
+ */
 app.get("/class/:id", middleware_1.authMiddleware, middleware_1.teacherMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const teacherId = req.userId;
     const classId = req.params.id;
@@ -262,6 +304,11 @@ app.get("/class/:id", middleware_1.authMiddleware, middleware_1.teacherMiddlewar
         }
     });
 }));
+/**
+ * GET /students
+ * Retrieves all users with the role "student".
+ * Protected by authMiddleware and teacherMiddleware.
+ */
 app.get("/students", middleware_1.authMiddleware, middleware_1.teacherMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const student = yield models_1.User.find({ role: "student" });
     if (!student) {
@@ -280,6 +327,11 @@ app.get("/students", middleware_1.authMiddleware, middleware_1.teacherMiddleware
         }))
     });
 }));
+/**
+ * GET /teachers
+ * Retrieves all users with the role "teacher".
+ * Protected by authMiddleware and teacherMiddleware.
+ */
 app.get("/teachers", middleware_1.authMiddleware, middleware_1.teacherMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const teacher = yield models_1.User.find({ role: "teacher" });
     if (!teacher) {
@@ -298,6 +350,11 @@ app.get("/teachers", middleware_1.authMiddleware, middleware_1.teacherMiddleware
         }))
     });
 }));
+/**
+ * GET /class/:id/my-attendance
+ * Retrieves the attendance record for the current student in a specific class.
+ * Protected by authMiddleware and studentMiddleware.
+ */
 app.get("/class/:id/my-attendance", middleware_1.authMiddleware, middleware_1.studentMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const classId = req.params.id;
     const studentId = req.userId;
@@ -340,6 +397,11 @@ app.get("/class/:id/my-attendance", middleware_1.authMiddleware, middleware_1.st
         });
     }
 }));
+/**
+ * POST /attendance/start
+ * Starts an attendance session for a class. Only the class teacher can start a session.
+ * Protected by authMiddleware and teacherMiddleware.
+ */
 app.post("/attendance/start", middleware_1.authMiddleware, middleware_1.teacherMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { success, data } = types_1.attendanceSchema.safeParse(yield (req.body));
     if (!success) {
@@ -372,6 +434,11 @@ app.post("/attendance/start", middleware_1.authMiddleware, middleware_1.teacherM
         }
     });
 }));
+// TODO: Implement WebSocket route for real-time attendance tracking
+app.get("/ws");
+/**
+ * Starts the Express server on the configured port.
+ */
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });

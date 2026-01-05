@@ -1,3 +1,9 @@
+/**
+ * @file index.ts
+ * @description Main entry point for the HTTP server. Handles authentication, class management, and attendance.
+ * Provides RESTful API endpoints and initializes the database connection.
+ */
+
 import express from "express"
 import 'dotenv/config'
 import mongoose from "mongoose"
@@ -5,21 +11,34 @@ import { User, Class, Attendance } from "./models"
 import jwt from "jsonwebtoken"
 import { signUpSchema, signInSchema, classSchema, addStudentSchema, attendanceSchema } from "./types"
 import { authMiddleware, studentMiddleware, teacherMiddleware } from "./middleware"
+
 const app = express()
 const port = process.env.PORT || 4000
 
+/**
+ * Tracks the current active attendance session.
+ * Initialized when a teacher starts attendance for a class.
+ */
 let activeSession: { classId: string; startedAt: Date; attendance: Record<string, string> } | null = null;
 
-
+/**
+ * Establishment of MongoDB connection.
+ * Uses environment variable MONGO_URL.
+ */
 mongoose.connect(process.env.MONGO_URL || "").then(() => {
   console.log("Connected to MongoDB")
 }).catch((err) => {
   console.error(err)
 })
 
+// Middleware to parse JSON request bodies
 app.use(express.json())
 
 
+/**
+ * POST /auth/signup
+ * Registers a new user (student or teacher).
+ */
 app.post("/auth/signup", async (req, res) => {
   try {
     const { success, data } = signUpSchema.safeParse(await (req.body))
@@ -68,6 +87,10 @@ app.post("/auth/signup", async (req, res) => {
 })
 
 
+/**
+ * POST /auth/login
+ * Authenticates a user and returns a JWT token.
+ */
 app.post("/auth/login", async (req, res) => {
   try {
     const { success, data } = signInSchema.safeParse(await (req.body))
@@ -110,6 +133,11 @@ app.post("/auth/login", async (req, res) => {
 })
 
 
+/**
+ * GET /auth/me
+ * Returns information about the currently authenticated user.
+ * Protected by authMiddleware.
+ */
 app.get("/auth/me", authMiddleware, async (req, res) => {
   try {
     const user = await User.findOne({
@@ -145,6 +173,11 @@ app.get("/auth/me", authMiddleware, async (req, res) => {
 })
 
 
+/**
+ * POST /class
+ * Creates a new class. Only teachers can create classes.
+ * Protected by authMiddleware.
+ */
 app.post("/class", authMiddleware, async (req, res) => {
   const { success, data } = classSchema.safeParse(await (req.body))
   if (!success) {
@@ -195,6 +228,11 @@ app.post("/class", authMiddleware, async (req, res) => {
 })
 
 
+/**
+ * POST /class/:id/add-student
+ * Adds a student to a specific class. Only the class teacher can add students.
+ * Protected by authMiddleware and teacherMiddleware.
+ */
 app.post("/class/:id/add-student", authMiddleware, teacherMiddleware, async (req, res) => {
   const { success, data } = addStudentSchema.safeParse(await (req.body))
   if (!success) {
@@ -253,6 +291,11 @@ app.post("/class/:id/add-student", authMiddleware, teacherMiddleware, async (req
 })
 
 
+/**
+ * GET /class/:id
+ * Retrieves details of a class, including the list of enrolled students.
+ * Protected by authMiddleware and teacherMiddleware.
+ */
 app.get("/class/:id", authMiddleware, teacherMiddleware, async (req, res) => {
   const teacherId = req.userId
   const classId = req.params.id
@@ -292,6 +335,11 @@ app.get("/class/:id", authMiddleware, teacherMiddleware, async (req, res) => {
 })
 
 
+/**
+ * GET /students
+ * Retrieves all users with the role "student".
+ * Protected by authMiddleware and teacherMiddleware.
+ */
 app.get("/students", authMiddleware, teacherMiddleware, async (req, res) => {
   const student = await User.find({ role: "student" })
   if (!student) {
@@ -312,6 +360,11 @@ app.get("/students", authMiddleware, teacherMiddleware, async (req, res) => {
 })
 
 
+/**
+ * GET /teachers
+ * Retrieves all users with the role "teacher".
+ * Protected by authMiddleware and teacherMiddleware.
+ */
 app.get("/teachers", authMiddleware, teacherMiddleware, async (req, res) => {
   const teacher = await User.find({ role: "teacher" })
   if (!teacher) {
@@ -332,6 +385,11 @@ app.get("/teachers", authMiddleware, teacherMiddleware, async (req, res) => {
 })
 
 
+/**
+ * GET /class/:id/my-attendance
+ * Retrieves the attendance record for the current student in a specific class.
+ * Protected by authMiddleware and studentMiddleware.
+ */
 app.get("/class/:id/my-attendance", authMiddleware, studentMiddleware, async (req, res) => {
   const classId = req.params.id
   const studentId = req.userId
@@ -379,6 +437,11 @@ app.get("/class/:id/my-attendance", authMiddleware, studentMiddleware, async (re
 })
 
 
+/**
+ * POST /attendance/start
+ * Starts an attendance session for a class. Only the class teacher can start a session.
+ * Protected by authMiddleware and teacherMiddleware.
+ */
 app.post("/attendance/start", authMiddleware, teacherMiddleware, async (req, res) => {
   const { success, data } = attendanceSchema.safeParse(await (req.body))
   if (!success) {
@@ -415,7 +478,12 @@ app.post("/attendance/start", authMiddleware, teacherMiddleware, async (req, res
 })
 
 
+// TODO: Implement WebSocket route for real-time attendance tracking
+app.get("/ws")
 
+/**
+ * Starts the Express server on the configured port.
+ */
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })
