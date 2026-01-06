@@ -478,9 +478,6 @@ app.post("/attendance/start", authMiddleware, teacherMiddleware, async (req, res
 })
 
 
-// TODO: Implement WebSocket route for real-time attendance tracking
-app.get("/ws")
-
 /**
  * Starts the Express server on the configured port.
  */
