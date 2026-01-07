@@ -22,9 +22,10 @@ require("dotenv/config");
 const mongoose_1 = __importDefault(require("mongoose"));
 const models_1 = require("./models");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const express_ws_1 = __importDefault(require("express-ws"));
 const types_1 = require("./types");
 const middleware_1 = require("./middleware");
-const app = (0, express_1.default)();
+const { app } = (0, express_ws_1.default)((0, express_1.default)());
 const port = process.env.PORT || 4000;
 /**
  * Tracks the current active attendance session.
@@ -42,6 +43,12 @@ mongoose_1.default.connect(process.env.MONGO_URL || "").then(() => {
 });
 // Middleware to parse JSON request bodies
 app.use(express_1.default.json());
+app.ws('/ws', function (ws, req) {
+    ws.on('message', function (msg) {
+        ws.send(msg);
+        console.log(msg);
+    });
+});
 /**
  * POST /auth/signup
  * Registers a new user (student or teacher).
@@ -434,8 +441,6 @@ app.post("/attendance/start", middleware_1.authMiddleware, middleware_1.teacherM
         }
     });
 }));
-// TODO: Implement WebSocket route for real-time attendance tracking
-app.get("/ws");
 /**
  * Starts the Express server on the configured port.
  */

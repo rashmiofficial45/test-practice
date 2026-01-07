@@ -14,8 +14,7 @@ import expressWs from "express-ws"
 import { signUpSchema, signInSchema, classSchema, addStudentSchema, attendanceSchema } from "./types"
 import { authMiddleware, studentMiddleware, teacherMiddleware } from "./middleware"
 
-const app = express()
-expressWs(app);
+const { app } = expressWs(express());
 const port = process.env.PORT || 4000
 
 /**
