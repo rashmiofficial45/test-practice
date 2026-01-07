@@ -9,12 +9,11 @@ import 'dotenv/config'
 import mongoose from "mongoose"
 import { User, Class, Attendance } from "./models"
 import jwt from "jsonwebtoken"
-import expressWs from "express-ws"
 
 import { signUpSchema, signInSchema, classSchema, addStudentSchema, attendanceSchema } from "./types"
 import { authMiddleware, studentMiddleware, teacherMiddleware } from "./middleware"
 
-const { app } = expressWs(express());
+const app = express()
 const port = process.env.PORT || 4000
 
 /**
@@ -35,14 +34,6 @@ mongoose.connect(process.env.MONGO_URL || "").then(() => {
 
 // Middleware to parse JSON request bodies
 app.use(express.json())
-
-
-app.ws('/ws', function (ws, req) {
-  ws.on('message', function (msg) {
-    ws.send(msg);
-    console.log(msg)
-  });
-});
 
 
 /**
