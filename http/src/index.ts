@@ -1,3 +1,5 @@
+/// <reference path="./request.d.ts" />
+
 /**
  * @file index.ts
  * @description Main entry point for the HTTP server. Handles authentication, class management, and attendance.
@@ -9,6 +11,7 @@ import 'dotenv/config'
 import mongoose from "mongoose"
 import { User, Class, Attendance } from "./models"
 import jwt from "jsonwebtoken"
+import { sessionStore } from "./session-store"
 
 import { signUpSchema, signInSchema, classSchema, addStudentSchema, attendanceSchema } from "./types"
 import { authMiddleware, studentMiddleware, teacherMiddleware } from "./middleware"
@@ -16,11 +19,7 @@ import { authMiddleware, studentMiddleware, teacherMiddleware } from "./middlewa
 const app = express()
 const port = process.env.PORT || 4000
 
-/**
- * Tracks the current active attendance session.
- * Initialized when a teacher starts attendance for a class.
- */
-let activeSession: { classId: string; startedAt: Date; attendance: Record<string, string> } | null = null;
+
 
 /**
  * Establishment of MongoDB connection.
@@ -455,18 +454,18 @@ app.post("/attendance/start", authMiddleware, teacherMiddleware, async (req, res
   const classExist = await Class.findOne({
     _id: classId
   })
-  if (!classExist || classExist.teacherId !== req.userId) {
+  if (!classExist || classExist.teacherId?.toString() !== req.userId) {
     res.status(401).json({
       "success": false,
       "error": "Forbidden, not class teacher"
     })
     return
   }
-  activeSession = {
+  sessionStore.setSession({
     classId: classId.toString(),
     startedAt: new Date(),
     attendance: {}
-  };
+  });
 
 
   res.status(200).json({
@@ -479,10 +478,18 @@ app.post("/attendance/start", authMiddleware, teacherMiddleware, async (req, res
 })
 
 
+
+
 /**
  * Starts the Express server on the configured port.
  */
-app.listen(port, () => {
+import http from "http";
+import { initializeWebSocket } from "./websocket";
+
+const server = http.createServer(app);
+initializeWebSocket(server);
+
+server.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })
 
